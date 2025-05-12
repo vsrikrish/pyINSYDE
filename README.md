@@ -1,4 +1,6 @@
-_your badges here (codecov, JOSS, etc)_
+[![Version](https://img.shields.io/badge/version-0.1-blue.svg)](https://github.com/vsrikrish/pyinsyde)
+[![License](https://img.shields.io/badge/License-BSD--2--Clause-green.svg)](LICENSE)
+[![Maintenance](https://img.shields.io/badge/Maintenance-Active-brightgreen.svg)](Maintenance)
 
 # pyINSYDE
 
