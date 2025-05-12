@@ -13,7 +13,7 @@ Python port of the INSYDE synthetic flood damage model (Dottori et al, 2016).
 
 Estimating damages from flooding are often based on simple, deterministic depth-damage functions (DDFs) which rely on historical claims or reporting data and expert assessments. While large-scale damage estimates using DDFs are readily scalable, the underlying estimation methods can be subject to input data errors or the typical potential biases associated with expert assessments. While aggregate damage estimates may be robust to these errors, they may matter more for individual properties. Moreover, there may be considerable uncertainties associated with how both building characteristics and flood dynamics influence the depth-damage relationship.
 
-INSYDE is a synthetic damage model using a reduced-form but mechanistically-motivated representation of building damages and associated repair and recovery costs. The goal of `pyINSIDE` is to provide a Python port of this model to faciliate assessments of depth-damage uncertainty.
+INSYDE is a synthetic damage model using a reduced-form but mechanistically-motivated representation of building damages and associated repair and recovery costs. The goal of `pyINSYDE` is to provide a Python port of this model to faciliate assessments of depth-damage uncertainty.
 
 ## Journal reference
 
@@ -25,7 +25,7 @@ Dottori, F., Figueiredo, R., Martina, M. L. V., Molinari, D., & Scorzini, A. R. 
 
 ### Dependencies
 
-`pyINSIDE` was developed using Python 3.9.
+`pyINSYDE` was developed using Python 3.9.
 
 | Package | Version |
 |-------|---------|
