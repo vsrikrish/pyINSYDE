@@ -1,45 +1,42 @@
-# model_repo_template
- 
-Template repository for model codes
+_your badges here (codecov, JOSS, etc)_
+
+# pyINSIDE
+
+**pyINSIDE**
+
+Python port of INSYDE (Dottori et al, 2016)
+
+\* corresponding author:  Vivek Srikrishnan, vs498@cornell.edu
 
 ## Purpose
-This is a template for repository for model codes. These should be kept separate from the codes used for specific experiments tied to papers, but rather for the model code itself along with relevant scripts for testing, examples, etc. This keeps each repository focused on a specific purpose, and helps organize code when models are used for multiple experiments.
 
-## Using the template
+Write a description of the model and its intended purpose here. Think of this as an abstract (but you can use fancier formatting, like bullets.)
 
-Click `Use this template` on the main repository page (shows up to the left of `Code`). Name your repository, fill in a description, select whether you want the repository to be `Public` or `Private`, and leave `Include all branches` unchecked.
+## Journal reference
 
-### Customize your `.gitignore` file
+Original INSYDE reference:
 
-The `.gitignore` supplied with this template is configured for Julia. If you're using a different language, update the `.gitignore` accordingly, and also modify as needed for your particular project.
+Dottori, F., Figueiredo, R., Martina, M. L. V., Molinari, D., & Scorzini, A. R. (2016). INSYDE: a synthetic, probabilistic flood damage model based on explicit cost analysis. *Natural Hazards and Earth System Sciences*, 16(12), 2577–2591. <https://doi.org/10.5194/nhess-16-2577-2016>
 
-### Choose a license
+## Installation
 
-By default, this template uses the MIT license. This is a good, general, permissive choice, but if you want to [use a different license](https://choosealicense.com/), delete the existing `LICENSE.md` and [add a new license file](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/adding-a-license-to-a-repository) corresponding to the desired license.
+### Dependencies
 
-### Suggestions
+List packages (with versions) that you installed and relied on for your code (explicitly; any necessary "behind the scenes" packages that were installed by the package manager don't need to be mentioned), along with the versions (this will help ensure compatibility down the road). Depending on the package manager used, these may be easy to get from a `Project.toml`, `environment.yml`, or an analogous file. If you installed a package from its code repository, link to the repository and a link to its released version (ideally a DOI if available).
 
-- The repository is not a place to store large amounts of raw data. If the data is available using a DOI, provide a reference and link, and document how to download the data and place it in `data/` in the appropriate format for the model scripts to access. For small amounts of data, place directly in `data/`.
-- Create complete documentation in the `README.md`, as well as in the scripts themselves, which will help debugging and code handoffs. Have others read your documentation and test to ensure that the instructions are clear and that they can install and execute the model.
-- Try to avoid hard-coding absolute paths into your code. Instead, make them relative to the repository root so they will work regardless of how someone clones the relevant repositories.
+| Package | Version | Repository Link | DOI |
+|-------|---------|-----------------|-----|
+| dependency 1 | version | -- | -- |
+| dependency 2 | version | link to code repository | link to DOI of release |
 
-## Creating a release
+### Instructions
 
-"Stable" versions of your model should be released, so they can be used for reproducible analyses. You should use a released version in any experiments.
+Provide instructions on how to install a released version of the model. 
 
-To generate a DOI for the release, you can [link your GitHub repository to Zenodo](https://docs.github.com/en/repositories/archiving-a-github-repository/referencing-and-citing-content). Then it will automatically generate a DOI when you [create a release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
+## Getting Started
 
-## Using the README template
+Provide instructions on how to configure and run the code. This can be a link to broader documentation (if written for the model) or listed here.
 
-A sample meta-repository README markdown template is provided in this repository in the file `repo_readme_template.md`. 
+## Contribution Guidelines
 
-To use it, after creating a new repository using this template and cloning to your local machine:
-
-1. Change your directory to the local repository path.
-2. Run `git rm README.md` to delete this file (`README.md`) and commit it using `git commit -m 'remove default README'`.
-3. Run `git mv repo_readme_template.md README.md` to rename `repo_readme_template.md` as `README.md`.
-4. Run `git add README.md` to stage the new file that will show up on load in your remote GitHub repository.
-5. Run `git rm repo_readme_template.md` to remove the original template.
-6. Run `git commit -m 'create new README'` to set the changes.
-7. Run `git push` to send the changes to the remote GitHub repository.
-8. Modify the `README.md` file appropriately to represent your model and use the `add`, `commit`, `push` workflow to update your remote repository.
+Provide information on how people can contribute (for example, if they find bugs or want to submit a pull request).
