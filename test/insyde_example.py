@@ -1,7 +1,4 @@
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(os.getcwd()), "insyde"))
-from insyde import *
+from src.pyinsyde.insyde import BuildingProperties, Building
 
 prop = {
 'FA': 100,
@@ -32,3 +29,5 @@ q = 1     # water quality (presence of pollutants)
 
 h = b.waterLevel(he)
 res = b.compute_damage(he, v, d, s, q)
+
+print(round(res["absDamage"], 0) == 65849.0)

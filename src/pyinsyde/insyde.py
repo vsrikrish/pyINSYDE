@@ -1,7 +1,6 @@
 #%%
 
-import os
-import math
+from os.path import join, dirname, abspath, basename
 from dataclasses import dataclass, fields
 import numpy as np
 from scipy.stats import truncnorm, norm
@@ -12,21 +11,35 @@ from scipy.stats import truncnorm, norm
 Python port of the INSYDE model from Dottori et al (2016). This module contains code to determine water levels and damages.
 """
 
-# read replacement value and unit cost data
-rep_val_data = np.genfromtxt(os.path.join(os.path.dirname(os.getcwd()), "data", "replacement_values.txt"), delimiter=" ", skip_header=2, usecols=(0, 1, 2))
+def read_replacement_values(fpath:str=None) -> np.array:
+    """Read in building replacement value dataset.
 
-uc_lines = []                                             
+    Args:
+        fpath: file path of the replacement value data; this should be an absolute path.
+    """
 
-with open(os.path.join(os.path.dirname(os.getcwd()), "data", "unit_prices.txt"), 'r') as f: 
-    next(f)
-    next(f)
-    for line in f:
-        if not line.lstrip().startswith('#'):
-            uc_lines.append(line)   
-strip_list = [line.replace('\n','').split() for line in uc_lines if line != '\n']
-unit_cost_data = dict()
-for line in strip_list: 
-    unit_cost_data[line[0]] = float(line[1]) 
+    rep_val_data = np.genfromtxt(fpath, delimiter=" ", skip_header=2, usecols=(0, 1, 2))
+    return rep_val_data
+
+def read_unit_prices(fpath:str=None) -> dict:
+    """Read in building replacement value dataset.
+
+    Args:
+        fpath: file path of the unit price data; this should be an absolute path.
+    """
+    uc_lines = []                                             
+
+    with open(fpath, 'r') as f: 
+        next(f)
+        next(f)
+        for line in f:
+            if not line.lstrip().startswith('#'):
+                uc_lines.append(line)   
+    strip_list = [line.replace('\n','').split() for line in uc_lines if line != '\n']
+    unit_cost_data = dict()
+    for line in strip_list: 
+        unit_cost_data[line[0]] = float(line[1]) 
+    return unit_cost_data
 
 @dataclass
 class BuildingProperties:
@@ -49,6 +62,8 @@ class BuildingProperties:
         YY: year of construction.
         LM: level of maintanance; 0.9 low, medium 1 (default), 1.1 high.
         sd: standard deviation of perturbations to fragility curves; default = 0 (no uncertainty).
+        rv_path: absolute path to replacement values data; default is the default INSYDE dataset.
+        uc_path: absolute path to recovery unit price data; default is the default INSYDE dataset.
     """
     FA: float
     EP: float
@@ -66,6 +81,8 @@ class BuildingProperties:
     FL: float = 1.0
     LM: float = 1.1
     sd: float = 0.0
+    rv_path: str = None
+    up_path: str = None
 
     def items(self):
         for field in fields(self):
@@ -95,8 +112,19 @@ class Building:
             self.BA = 0.5 * self.FA
 
         # get replacement value
+        # use default INSYDE dataset if not passed
+        if self.rv_path is None:
+            rep_val_data = read_replacement_values(join(dirname(dirname(dirname(abspath(__file__)))), "data", "replacement_values.txt"))
+        else:
+            rep_val_data = read_replacement_values(self.rv_path)
         self.repVal = rep_val_data[self.BS - 1, self.BT - 1]
-        # get unit costs
+
+        # get replacement value
+        # use default INSYDE dataset if not passed
+        if self.up_path is None:
+            unit_cost_data = read_unit_prices(join(dirname(dirname(dirname(abspath(__file__)))), "data", "unit_prices.txt"))
+        else:
+            unit_cost_data = read_unit_prices(self.up_path)
         self.costs = unit_cost_data     
 
         # compute exposure variables
@@ -111,17 +139,14 @@ class Building:
         self.RVU = self.RVN * (1 - decay)
 
 
-    def waterLevel(self, he):
-        """
-        Based on lines 7-11 INSYDE, depends on:
-        - he: water depth outside of the building (m)
-        - self.NF: number of floors 
-        - IH: interfloor height (m)
-        - GL: ground floor level (m)
+    def waterLevel(self, he:float) -> np.ndarray:
+        """Calculate internal flood depth from exterior water level.
 
+        Args:
+            he: water depth outside of the building (m).
+            
         Returns:
-        - h: water depth inside the building for each floor (m)
-        More description in Tables 2 and 3
+            Water depth inside the building for each floor (m) as a numpy ndarray.
         """
         # Calculate the water depth at the ground level
 
@@ -142,6 +167,9 @@ class Building:
             depth: water depth inside of the building (m).
             v: velocity (m/s).
             d = flood duration (h).
+
+        Returns:
+            Tuple of damage ratings from each component: flood duration, wood floor damage, partition damage, window/door damage, and structural damage.
         """
 
         def ptruncnorm(x, a, b, mean, sd, sd_perturb=self.sd):
@@ -200,6 +228,8 @@ class Building:
             s: sediment concentration.
             q: presence of pollutants (binary).
 
+        Returns:
+            A dict mapping keys of damage information to the corresponding values. In addition to absolute and relative damages, the internal flood depth, damages to each structural component group, and individual types of damages are returned.
         """
 
         h = self.waterLevel(he)

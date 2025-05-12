@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyINSIDE"
+version = "0.1"
+dependencies = [
+    "numpy>=2.1",
+    "scipy>=1.9"
+]
+authors = [
+    { name="Vivek Srikrishnan", email="vs498@cornell.edu"}    
+]
+description = "Python port of the INSYDE flood damage model"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3"
+]
+license = {file = "LICENSE"}
+keywords = ["flood risk", "depth-damage functions"]
