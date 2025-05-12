@@ -1,4 +1,5 @@
 [![Version](https://img.shields.io/badge/version-0.1-blue.svg)](https://github.com/vsrikrish/pyinsyde)
+[![DOI](https://zenodo.org/badge/980586904.svg)](https://doi.org/10.5281/zenodo.15388700)
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-green.svg)](LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance-Active-brightgreen.svg)](Maintenance)
 
