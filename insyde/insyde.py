@@ -13,10 +13,11 @@ Python port of the INSYDE model from Dottori et al (2016). This module contains 
 """
 
 # read replacement value and unit cost data
-rep_val_data = np.genfromtxt("data/replacement_values.txt", delimiter=" ", skip_header=2, usecols=(0, 1, 2))
+rep_val_data = np.genfromtxt(os.path.join(os.path.dirname(os.getcwd()), "data", "replacement_values.txt"), delimiter=" ", skip_header=2, usecols=(0, 1, 2))
 
-uc_lines = []                                                     
-with open('data/unit_prices.txt', 'r') as f: 
+uc_lines = []                                             
+
+with open(os.path.join(os.path.dirname(os.getcwd()), "data", "unit_prices.txt"), 'r') as f: 
     next(f)
     next(f)
     for line in f:
@@ -39,9 +40,9 @@ class BuildingProperties:
         IH: interstory height (m).
         BH: basement height (m).
         GL: ground floor level (m); default is 0.
-        NF: number of floors.
+        self.NF: number of floors.
         BT: building type; 1 - detached; 2 - semi-detached; 3 - apartment house.
-        BS: building structure; 1 - reinforced concrete, 2 - masonry, 3 - wood.
+        BS: building structure; 1 - reiself.NForced concrete, 2 - masonry, 3 - wood.
         PD: plant distribution; 1 - centralized, 2 - distributed.
         PT: heating system type; 1 - radiator; 2 - underfloor heating.
         FL: finishing level coefficient; 0.8 is low, 1 medium (default), 1.2 high.
@@ -50,24 +51,24 @@ class BuildingProperties:
         sd: standard deviation of perturbations to fragility curves; default = 0 (no uncertainty).
     """
     FA: float
-    IA: float = None
-    BA: float = None
     EP: float
     IH: float
     BH: float
-    GL: float = 0.0
     NF: int
     BT: int
     BS: int
     PD: int
     PT: int
-    FL: float = 1.0
     YY: float
+    IA: float = None
+    BA: float = None
+    GL: float = 0.0
+    FL: float = 1.0
     LM: float = 1.1
     sd: float = 0.0
 
     def items(self):
-        for field in dataclasses.fields(self):
+        for field in fields(self):
             yield field.name, getattr(self, field.name)
 
 class Building:
@@ -114,7 +115,7 @@ class Building:
         """
         Based on lines 7-11 INSYDE, depends on:
         - he: water depth outside of the building (m)
-        - NF: number of floors 
+        - self.NF: number of floors 
         - IH: interfloor height (m)
         - GL: ground floor level (m)
 
@@ -130,14 +131,15 @@ class Building:
         return depth
 
     def fragility(self, 
-        he:float, 
+        he:float,
+        depth:float, 
         v:float, 
         d:float
         ) -> tuple:
         """Fragility curves from flooding.
 
         Args:
-            he: water depth outside of the building (m).
+            depth: water depth inside of the building (m).
             v: velocity (m/s).
             d = flood duration (h).
         """
@@ -147,7 +149,6 @@ class Building:
             x_perturb = x + norm.rvs(0, sd_perturb * sd)
             return truncnorm.cdf(x_perturb, lower, upper, loc=mean, scale=sd)
         
-        depth = self.waterlevel(he)
         # damage due to flood duration
         # starts at 12 hours and maximizes after 36
         frag1 = np.round(ptruncnorm(d, a=12, b=36, mean=24, sd=24/6), 3)
@@ -203,9 +204,7 @@ class Building:
 
         h = self.waterLevel(he)
         he = np.minimum(he, self.NF * self.IH * 1.05)    
-        dr = self.fragility(he, v, d)
-
-        nf = np.repeat(self.NF, len(he))
+        dr = self.fragility(he, h, v, d)
 
         # C1: Pumping (€/m3)
         C1 = self.costs["pumping"] * (he >= 0) * (
@@ -223,13 +222,13 @@ class Building:
         # C3: Cleaning (€/m2)
         C3 = self.costs["cleaning"] * \
             (1 + q * 0.4) * (
-            self.IA * np.minimum(nf, np.ceil(h / self.IH)) + self.IP * h +
+            self.IA * np.minimum(self.NF, np.ceil(h / self.IH)) + self.IP * h +
             self.BA + self.BP * self.BH
             ) * (1 - 0.2 * (self.BT == 3))
 
         # C4: Dehumidification (€/m3)
         C4 = self.costs["dehumidification"] * dr[0] * (
-            self.IA * self.IH * np.minimum(nf, np.ceil(h / self.IH)) * (he > 0) +
+            self.IA * self.IH * np.minimum(self.NF, np.ceil(h / self.IH)) * (he > 0) +
             self.BA * self.BH
             ) * (1 - 0.2 * (self.BT == 3))
 
@@ -237,24 +236,24 @@ class Building:
         # ==========
         # Screed removal
         R1 = self.costs["screedremoval"] * self.IA * (
-            (self.FL > 1) * dr[0] * np.minimum(nf, dr[1])
+            (self.FL > 1) * dr[0] * np.minimum(self.NF, dr[1])
         ) * (1 - 0.2 * (self.BT == 3))
 
         # Pavement removal
         R2 = self.costs["parquetremoval"] * (self.FL > 1) * \
-            dr[0] * np.minimum(nf, dr[1]) * self.IA * (1 - 0.2 * (self.BT == 3))
+            dr[0] * np.minimum(self.NF, dr[1]) * self.IA * (1 - 0.2 * (self.BT == 3))
 
         # Baseboard removal
         R3 = self.costs["baseboardremoval"] * \
-            dr[0] * np.minimum(nf, np.ceil((h - 0.05) / self.IH)) * self.IP * (1 - 0.2 * (self.BT == 3))
+            dr[0] * np.minimum(self.NF, np.ceil((h - 0.05) / self.IH)) * self.IP * (1 - 0.2 * (self.BT == 3))
 
         # Partitions removal
         R4 = self.costs["partitionsremoval"] * dr[0] * \
-            (1 + ((self.BS == 1) * 0.20)) * 0.5 * self.IP * self.IH * np.minimum(nf, dr[2]) * (1 - 0.2 * (self.BT == 3))
+            (1 + ((self.BS == 1) * 0.20)) * 0.5 * self.IP * self.IH * np.minimum(self.NF, dr[2]) * (1 - 0.2 * (self.BT == 3))
 
         # Plasterboard removal
         R5 = self.costs["plasterboardremoval"] * \
-            self.IA * 0.2 * np.minimum(nf, np.ceil((h - (self.IH - 0.5)) / self.IH)) * (self.FL > 1) * (1 - 0.2 * (self.BT == 3))
+            self.IA * 0.2 * np.minimum(self.NF, np.ceil((h - (self.IH - 0.5)) / self.IH)) * (self.FL > 1) * (1 - 0.2 * (self.BT == 3))
 
         # External plaster removal
         R6 = self.costs["extplasterremoval"] * \
@@ -266,16 +265,16 @@ class Building:
 
         # Doors removal
         R8 = self.costs["doorsremoval"] * \
-            max(dr[3], dr[0]) * (np.minimum(nf, dr[4]) * 0.12 * self.IA + 0.03 * self.BA) * (1 - 0.2 * (self.BT == 3))
+            max(dr[3], dr[0]) * (np.minimum(self.NF, dr[4]) * 0.12 * self.IA + 0.03 * self.BA) * (1 - 0.2 * (self.BT == 3))
 
         # Windows removal
         R9 = self.costs["windowsremoval"] * \
-            max(dr[6], dr[0]) * (np.minimum(nf, dr[5]) * 0.12 * self.IA) * (1 - 0.2 * (self.BT == 3))
+            max(dr[6], dr[0]) * (np.minimum(self.NF, dr[5]) * 0.12 * self.IA) * (1 - 0.2 * (self.BT == 3))
 
         # Boiler removal
         R10 = self.costs["boilerremoval"] * self.IA * (
             (self.PD == 1) * (int(self.BA > 0) + (int(self.BA == 0) * (h > 1.6))) +
-            (self.PD == 2) * np.minimum(nf, np.ceil((h - 1.6) / self.IH))
+            (self.PD == 2) * np.minimum(self.NF, np.ceil((h - 1.6) / self.IH))
         ) * (1 - 0.2 * (self.BT == 3))
 
 
@@ -283,23 +282,23 @@ class Building:
         # =================
         # Partitions replacement
         N1 = self.costs["partitionsreplace"] * dr[0] * \
-            (1 + ((self.BS == 1) * 0.20)) * 0.5 * self.IP * self.IH * np.minimum(nf, dr[2]) * (1 - 0.2 * (self.BT == 3))
+            (1 + ((self.BS == 1) * 0.20)) * 0.5 * self.IP * self.IH * np.minimum(self.NF, dr[2]) * (1 - 0.2 * (self.BT == 3))
 
         # Screed replacement
         N2 = self.costs["screedreplace"] * self.IA * (
-            (self.FL > 1) * dr[0] * np.minimum(nf, dr[1])
+            (self.FL > 1) * dr[0] * np.minimum(self.NF, dr[1])
         ) * (1 - 0.2 * (self.BT == 3))
 
         # Plasterboard replacement
         N3 = self.costs["plasterboardreplace"] * \
-            self.IA * 0.2 * np.minimum(nf, np.ceil((h - (self.IH - 0.5)) / self.IH)) * (self.FL > 1) * (1 - 0.2 * (self.BT == 3))
+            self.IA * 0.2 * np.minimum(self.NF, np.ceil((h - (self.IH - 0.5)) / self.IH)) * (self.FL > 1) * (1 - 0.2 * (self.BT == 3))
 
 
         # 4. Structural
         # =============
         S1 = self.costs["soilconsolidation"] * dr[7] * self.FA * self.NF * self.IH * (0.01 + ((self.BS == 1) * 0.01)) * (1 - 0.2 * (self.BT == 3))
 
-        S2 = self.costs["localrepair"] * (self.BS == 2) * dr8 * self.EP * 0.5 * he * (1 + s) * (1 - 0.2 * (self.BT == 3))
+        S2 = self.costs["localrepair"] * (self.BS == 2) * dr[7] * self.EP * 0.5 * he * (1 + s) * (1 - 0.2 * (self.BT == 3))
 
         S3 = self.costs["pillarretrofitting"] * (self.BS == 1) * dr[7] * 0.15 * self.EP * he * (1 - 0.2 * (self.BT == 3))
 
@@ -308,32 +307,32 @@ class Building:
         # ============
         # External plaster replacement
         F1 = self.costs["extplasterreplace"] * self.FL * \
-            max(int(q), (self.LM <= 1), dr[0], dr[3]) * self.EP * (he + 1.0) * (1 - 0.2 * (self.BT == 3))
+            max(float(q), float(self.LM <= 1), dr[0], dr[3]) * self.EP * (he + 1.0) * (1 - 0.2 * (self.BT == 3))
 
         # Internal plaster replacement
         F2 = self.costs["intplasterreplace"] * self.FL * \
-            max(int(q), (self.LM <= 1), dr1) * (self.IP * (h + 1.0) + self.BP * self.BH) * (1 - 0.2 * (self.BT == 3))
+            max(float(q), float(self.LM <= 1), dr[0]) * (self.IP * (h + 1.0) + self.BP * self.BH) * (1 - 0.2 * (self.BT == 3))
 
         # Painting
-        F3 = self.costs["extpainting"] * np.minimum(nf, np.ceil(he / self.IH)) * self.IH * self.EP * self.FL * (1 - 0.2 * (self.BT == 3))
+        F3 = self.costs["extpainting"] * np.minimum(self.NF, np.ceil(he / self.IH)) * self.IH * self.EP * self.FL * (1 - 0.2 * (self.BT == 3))
         
         F4 = self.costs["intpainting"] * (
-            np.minimum(nf, np.ceil(h / self.IH)) * self.IH * self.IP + self.BP * self.BH * (1 if (self.FL > 1 and self.BT == 1) else 0)
+            np.minimum(self.NF, np.ceil(h / self.IH)) * self.IH * self.IP + self.BP * self.BH * (1 if (self.FL > 1 and self.BT == 1) else 0)
         ) * self.FL * (1 - 0.2 * (self.BT == 3))
 
         # Pavement replacement 
-        F5 = self.costs["parquetreplace"] * (self.FL > 1) * dr[0] * np.minimum(nf, dr[1]) * self.IA * (1 - 0.2 * (self.BT == 3))
+        F5 = self.costs["parquetreplace"] * (self.FL > 1) * dr[0] * np.minimum(self.NF, dr[1]) * self.IA * (1 - 0.2 * (self.BT == 3))
 
         # Baseboard replacement
-        F6 = self.costs["baseboardreplace"] * dr[0] * np.minimum(nf, np.ceil((h - 0.05) / self.IH)) * self.IP * (1 - 0.2 * (self.BT == 3))
+        F6 = self.costs["baseboardreplace"] * dr[0] * np.minimum(self.NF, np.ceil((h - 0.05) / self.IH)) * self.IP * (1 - 0.2 * (self.BT == 3))
 
         # 6. Windows and doors
         # ====================
         # Doors replacement
-        W1 = self.costs["doorsreplace"] * max(dr[3], dr[0]) * (np.minimum(nf, dr[4]) * 0.12 * self.IA + 0.03 * self.BA) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
+        W1 = self.costs["doorsreplace"] * max(dr[3], dr[0]) * (np.minimum(self.NF, dr[4]) * 0.12 * self.IA + 0.03 * self.BA) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
 
         # Windows replacement
-        W2 = self.costs["windowsreplace"] * max(dr[6], dr[0]) * (np.minimum(nf, dr[5]) * 0.12 * self.IA) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
+        W2 = self.costs["windowsreplace"] * max(dr[6], dr[0]) * (np.minimum(self.NF, dr[5]) * 0.12 * self.IA) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
 
 
         # 7. Building systems
@@ -341,28 +340,28 @@ class Building:
         # Boiler replacement
         P1 = self.costs["boilerreplace"] * self.IA * (
             (self.PD == 1) * ((self.BA > 0) + ((self.BA == 0) * (h > 1.6))) +
-            (self.PD == 2) * np.minimum(nf, np.ceil((h - 1.6) / self.IH))
+            (self.PD == 2) * np.minimum(self.NF, np.ceil((h - 1.6) / self.IH))
         ) * (1 + 0.25 * ((self.BT == 1) ^ (self.BT == 2)))
 
         # Radiator painting
-        P2 = self.costs["radiatorpaint"] * (self.PT == 1) * np.minimum(nf, np.ceil((h - 0.2) / self.IH)) * (self.IA / 20) * (1 - 0.2 * (self.BT == 3))
+        P2 = self.costs["radiatorpaint"] * (self.PT == 1) * np.minimum(self.NF, np.ceil((h - 0.2) / self.IH)) * (self.IA / 20) * (1 - 0.2 * (self.BT == 3))
 
         # Underfloor heating replacement
-        P3 = self.costs["underfloorheatingreplace"] * self.IA * (self.PT == 2) * ((self.FL > 1) * dr[0] * np.minimum(nf, dr[1])) * (1 - 0.2 * (self.BT == 3))
+        P3 = self.costs["underfloorheatingreplace"] * self.IA * (self.PT == 2) * ((self.FL > 1) * dr[0] * np.minimum(self.NF, dr[1])) * (1 - 0.2 * (self.BT == 3))
 
         # Electrical system replacement
         P4 = self.costs["electricalsystreplace"] * self.IA * (
-            np.minimum(nf, np.ceil((h - 0.2) / self.IH)) * 0.4 +
-            np.minimum(nf, np.ceil((h - 1.1) / self.IH)) * 0.3 +
-            np.minimum(nf, np.ceil((h - 1.5) / self.IH)) * 0.3
+            np.minimum(self.NF, np.ceil((h - 0.2) / self.IH)) * 0.4 +
+            np.minimum(self.NF, np.ceil((h - 1.1) / self.IH)) * 0.3 +
+            np.minimum(self.NF, np.ceil((h - 1.5) / self.IH)) * 0.3
         ) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
 
         # Plumbing system replacement
-        P5 = up["plumbingsystreplace"] * self.IA * (
+        P5 = self.costs["plumbingsystreplace"] * self.IA * (
             ((s > 0.10) or q) * (
-                np.minimum(nf, np.ceil((h - 0.15) / self.IH)) * 0.1 +
-                np.minimum(nf, np.ceil((h - 0.4) / self.IH)) * 0.2 +
-                np.minimum(nf, np.ceil((h - 0.9) / self.IH)) * 0.2
+                np.minimum(self.NF, np.ceil((h - 0.15) / self.IH)) * 0.1 +
+                np.minimum(self.NF, np.ceil((h - 0.4) / self.IH)) * 0.2 +
+                np.minimum(self.NF, np.ceil((h - 0.9) / self.IH)) * 0.2
             )
         ) * (1 + (self.FL > 1)) * (1 - 0.2 * (self.BT == 3))
 
@@ -372,7 +371,7 @@ class Building:
         dmgRemoval      = R1 + R2 + R3 + R4 + R5 + R6 + R7 + R8 + R9 + R10
         dmgNonStructural = N1 + N2 + N3
         dmgStructural   = S1 + S2 + S3
-        dmgFinishing    = F1 + F2 + F3 + F4 + F5 + W1 + W2
+        dmgFinishing    = F1 + F2 + F3 + F4 + F5 + F6 + W1 + W2
         dmgSystems      = P1 + P2 + P3 + P4 + P5
 
         absDamage = dmgCleanUp + dmgRemoval + dmgNonStructural + dmgStructural + dmgFinishing + dmgSystems
@@ -394,7 +393,7 @@ class Building:
             "R6": R6, "R7": R7, "R8": R8, "R9": R9, "R10": R10,
             "N1": N1, "N2": N2, "N3": N3,
             "S1": S1, "S2": S2, "S3": S3,
-            "F1": F1, "F2": F2, "F3": F3, "F4": F4, "F5": F5,
+            "F1": F1, "F2": F2, "F3": F3, "F4": F4, "F5": F5, "F6": F6,
             "W1": W1, "W2": W2,
             "P1": P1, "P2": P2, "P3": P3, "P4": P4, "P5": P5
         }
