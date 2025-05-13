@@ -182,7 +182,7 @@ class Building:
         frag1 = np.round(ptruncnorm(d, a=12, b=36, mean=24, sd=24/6), 3)
         # damage due to wood floor damage (0.2-0.6m)
         frag2_1f = np.round(ptruncnorm(depth, a=0.2, b=0.6, mean=0.4, sd=0.4/6), 3)
-        frag2_2f = np.round(ptruncnorm(depth, a=0.2, b=0.6, mean=0.4, sd=0.4/6), 3)
+        frag2_2f = np.round(ptruncnorm(depth, a=0.2 + self.IH, b=0.6 + self.IH, mean=0.4 + self.IH, sd=0.4/6), 3)
         # damage to partitions (1.5-2m)
         frag3_1f = np.round(ptruncnorm(depth, a=1.5, b=2.0, mean=1.75, sd=0.5/6), 3)
         frag3_2f = np.round(ptruncnorm(depth, a=1.5 + self.IH, b=2.0 + self.IH, mean=1.75 + self.IH, sd=0.5/6), 3)       
