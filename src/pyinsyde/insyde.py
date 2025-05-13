@@ -114,7 +114,7 @@ class Building:
         # get replacement value
         # use default INSYDE dataset if not passed
         if self.rv_path is None:
-            rep_val_data = read_replacement_values("replacement_values.txt")
+            rep_val_data = read_replacement_values(join(dirname(abspath(__file__)), "replacement_values.txt"))
         else:
             rep_val_data = read_replacement_values(self.rv_path)
         self.repVal = rep_val_data[self.BS - 1, self.BT - 1]
@@ -122,7 +122,7 @@ class Building:
         # get replacement value
         # use default INSYDE dataset if not passed
         if self.up_path is None:
-            unit_cost_data = read_unit_prices("unit_prices.txt")
+            unit_cost_data = read_unit_prices(join(dirname(abspath(__file__)), "unit_prices.txt"))
         else:
             unit_cost_data = read_unit_prices(self.up_path)
         self.costs = unit_cost_data     
