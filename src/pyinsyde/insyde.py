@@ -262,7 +262,7 @@ class Building:
             s * (1 + q * 0.4) * (
             self.IA * h +
             self.BA * self.BH
-            ) * (1 - 0.2 * (self.BT == 3))
+            )) * (1 - 0.2 * (self.BT == 3))
 
         # C3: Cleaning (€/m2)
         C3 = self.costs["cleaning"] * \
