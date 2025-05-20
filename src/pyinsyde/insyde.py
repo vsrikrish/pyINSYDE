@@ -69,7 +69,6 @@ class BuildingProperties:
     FA: float
     EP: float
     IH: float
-    BE: bool = None
     BH: float
     NF: int
     BT: int
@@ -78,6 +77,7 @@ class BuildingProperties:
     PT: int
     YY: float
     IA: float = None
+    BE: bool = None
     BA: float = None
     GL: float = 0.0
     FL: float = 1.0
