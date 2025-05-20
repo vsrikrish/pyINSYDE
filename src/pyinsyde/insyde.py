@@ -48,6 +48,7 @@ class BuildingProperties:
     Attributes:
         FA: footprint area (m^2).
         IA: internal area (m^2); default is 0.9 * FA if missing.
+        BE: basement exists (boolean)
         BA: basement area (m^2); default is 0.5 * FA if missing.
         EP: external perimeter (m).
         IH: interstory height (m).
@@ -68,6 +69,7 @@ class BuildingProperties:
     FA: float
     EP: float
     IH: float
+    BE: bool = None
     BH: float
     NF: int
     BT: int
@@ -106,10 +108,12 @@ class Building:
         """
         for k, v in building_data.items():
             setattr(self, k, v)
+        if self.BE is None:
+            self.BE = False
         if self.IA is None:
             self.IA = 0.9 * self.FA
         if self.BA is None:
-            self.BA = 0.5 * self.FA
+            self.BA = 0.5 * self.FA * float(self.BE)
 
         # get replacement value
         # use default INSYDE dataset if not passed
@@ -129,12 +133,13 @@ class Building:
 
         # compute exposure variables
         self.IP = 2.5 * self.EP  # Internal perimeter (m)
-        self.BP = 4 * np.sqrt(self.BA)  # Basement perimeter (m)
+        self.BP = 4 * np.sqrt(self.BA) * float(self.BE)  # Basement perimeter (m)
+        self.BH = self.BH * float(self.BE) # basement height
         self.BL = self.GL - 0.3 - self.BH  # Basement level (m)
 
         # Calculate replacement values (new and used)
         self.RVN = self.repVal * self.FA * self.NF  
-        age = 2015 - self.YY
+        age = 2025 - self.YY
         decay = min(0.01 * age / self.LM, 0.3)
         self.RVU = self.RVN * (1 - decay)
 
@@ -179,7 +184,7 @@ class Building:
         
         # damage due to flood duration
         # starts at 12 hours and maximizes after 36
-        frag1 = np.round(ptruncnorm(d, a=12, b=36, mean=24, sd=24/6), 3)
+        frag1 = np.round(ptruncnorm(d, a=24, b=48, mean=36, sd=24/6), 3)
         # damage due to wood floor damage (0.2-0.6m)
         frag2_1f = np.round(ptruncnorm(depth, a=0.2, b=0.6, mean=0.4, sd=0.4/6), 3)
         frag2_2f = np.round(ptruncnorm(depth, a=0.2 + self.IH, b=0.6 + self.IH, mean=0.4 + self.IH, sd=0.4/6), 3)
@@ -237,13 +242,23 @@ class Building:
         dr = self.fragility(he, h, v, d)
 
         # C1: Pumping (€/m3)
-        C1 = self.costs["pumping"] * (he >= 0) * (
-            self.IA * max(-self.GL, 0) +
+        # product of unit price, the volume remaining in the basement after the event (h_slab = 0.3), and an economy of scale for the building type
+        
+        # Basement
+        C1_b = self.costs["pumping"] * (he >= 0) * (
             self.BA * (-self.BL - np.minimum(0.3, ((self.GL > 0) & (self.GL < 0.3)) * (0.3 - self.GL)))
             ) * (1 - 0.2 * (self.BT == 3))
+        
+        # First floor
+        C1_f = self.costs["pumping"] * (he >= 0) * (
+            self.IA * max(-self.GL, 0)
+        ) * (1 - 0.2 * (self.BT == 3))
+
+        C1 = C1_b + C1_f
 
         # C2: Waste disposal (€/m3)
-        C2 = self.costs["disposal"] * \
+        # product of disposal times sediment and pollutant along with the volume of water in the basement and above-ground stories
+        C2 = self.costs["disposal"] * (
             s * (1 + q * 0.4) * (
             self.IA * h +
             self.BA * self.BH
