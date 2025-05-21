@@ -80,7 +80,9 @@ In addition to the structural characteristics for the building, there are a few 
 
 ## Usage Examples
 
-Coming...
+Checkout the [examples](https://github.com/abpoll/pyINSYDE/tree/more_docs/examples) folder to work through a basic sensitivity analysis example and learn how to get started with `pyINSYDE`. 
+
+We are always working on creating more usage examples. Please feel free to contribute some from your own work!
 
 ## Documentation
 
