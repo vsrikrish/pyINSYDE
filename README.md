@@ -53,7 +53,7 @@ If you would like to edit the source code:
    cd pyinsyde
    ```
 2. Install the dependencies above (ideally in a virtual environment). `pyINSYDE` is designed to be lightweight and should work with most versions of Python 3, NumPy, and SciPy. If you use older versions, you can test functionality with `test/insyde_example.py`.
-3. Install `pyINSYDE` in development mode: `pip install -e`.
+3. Install `pyINSYDE` in development mode: `pip install -e .`.
 
 ## Getting Started
 
