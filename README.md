@@ -53,7 +53,7 @@ If you would like to edit the source code:
    cd pyinsyde
    ```
 2. Install the dependencies above (ideally in a virtual environment). `pyINSYDE` is designed to be lightweight and should work with most versions of Python 3, NumPy, and SciPy. If you use older versions, you can test functionality with `test/insyde_example.py`.
-3. Install `pyINSYDE` in development mode: `pip install -e`.
+3. Install `pyINSYDE` in development mode: `pip install -e .`.
 
 ## Getting Started
 
@@ -80,7 +80,9 @@ In addition to the structural characteristics for the building, there are a few 
 
 ## Usage Examples
 
-Coming...
+Checkout the [examples](https://github.com/abpoll/pyINSYDE/tree/more_docs/examples) folder to work through a basic sensitivity analysis example and learn how to get started with `pyINSYDE`. 
+
+We are always working on creating more usage examples. Please feel free to contribute some from your own work!
 
 ## Documentation
 
