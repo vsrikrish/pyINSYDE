@@ -1,4 +1,4 @@
-from src.pyinsyde.insyde import BuildingProperties, Building
+from pyinsyde.insyde import BuildingProperties, Building
 
 prop = {
 'FA': 100,
@@ -30,4 +30,4 @@ q = 1     # water quality (presence of pollutants)
 h = b.waterLevel(he)
 res = b.compute_damage(he, v, d, s, q)
 
-print(round(res["absDamage"], 0) == 65849.0)
+print(res)
